@@ -2,6 +2,10 @@ import json
 import pandas as pd 
 import numpy as np 
 
+# sql 
+import mysql.connector
+import configparser
+
 f = open("Standard.json", encoding="utf8")
 neo_full = json.load(f)
 
@@ -66,3 +70,48 @@ for column in list_cols:
     clean[column] = new_values     
 
 clean["manaValue"] = clean["manaValue"].astype('int32')
+
+
+### put this into a SQL database 
+config = configparser.ConfigParser()
+config.read('mtg_helper/db.ini')
+
+db = mysql.connector.connect(
+  host = config["mysql"]["host"], 
+  user = config["mysql"]["user"],
+  passwd = config["mysql"]["passwd"],
+  database = config["mysql"]["database"] # uncomment once created
+
+)
+
+mycursor = db.cursor()
+
+## Create db: 
+#mycursor.execute("CREATE DATABASE mtg_standard")
+
+## creating table for NEO cards - different tables for different sets? 
+
+# mycursor.execute("""CREATE TABLE neo (
+#   name VARCHAR(50), 
+#   colors VARCHAR(50), 
+#   colorIdentity VARCHAR(50), 
+#   manaCost VARCHAR(50), 
+#   manaValue tinyint UNSIGNED, 
+#   originalType VARCHAR(50), 
+#   types VARCHAR(50), 
+#   subtypes VARCHAR(50), 
+#   supertypes VARCHAR(50), 
+#   originalText TEXT, 
+#   keywords VARCHAR(50), 
+#   power tinyint UNSIGNED, 
+#   toughness tinyint UNSIGNED, 
+#   rarity VARCHAR(10), 
+#   setCode VARCHAR(3), 
+#   image_ref VARCHAR(50),
+#   cardID int PRIMARY KEY AUTO_INCREMENT)
+#   """)
+
+mycursor.execute("DESCRIBE neo")
+result = mycursor.fetchall()
+for row in result: 
+    print(row)
