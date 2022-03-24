@@ -1,4 +1,7 @@
-import json 
+# -*- coding: utf-8 -*-
+
+import json
+from readline import insert_text 
 import pandas as pd 
 import numpy as np 
 
@@ -21,7 +24,7 @@ for card in neo_full["data"]["NEO"]["cards"]:
         if present: 
             card_details.append(card[att])
         else: 
-            card_details.append(np.nan)
+            card_details.append(None)
 
     #add the first available link to image         
     card_details.append(card["purchaseUrls"][list(card["purchaseUrls"].keys())[0]])
@@ -41,6 +44,7 @@ pos = [False for x in range(len(neo_df["name"].values))]
 for i in range(len(neo_df["name"].values)): 
            
     if neo_df["name"][i] in first_copy: 
+        #saga cards have two sides - kinda janky
         if ("//" in neo_df["name"][i]) & (first_copy.count(neo_df['name'][i]) < 2):
             first_copy.append(neo_df["name"][i])
             pos[i] = True
@@ -61,16 +65,21 @@ for column in list_cols:
         #print(value, i)
         if type(value) == list: 
             if len(value) == 0:
-                new_values.append(np.nan)
+                new_values.append(None)
             else: 
                 new_values.append(', '.join(value))
         else: 
-            new_values.append(np.nan)
+            new_values.append(None)
                 
     clean[column] = new_values     
 
-clean["manaValue"] = clean["manaValue"].astype('int32')
+#clean["manaValue"] = clean["manaValue"].astype('int')
+#clean["manaValue"] = clean["manaValue"].apply(lambda x: int(x))
 
+clean["index"] = range(clean.shape[0])
+clean = clean.set_index("index")
+
+df_as_tuples = [tuple(clean.loc[i, :]) for i in range(clean.shape[0])]
 
 ### put this into a SQL database 
 config = configparser.ConfigParser()
@@ -111,7 +120,45 @@ mycursor = db.cursor()
 #   cardID int PRIMARY KEY AUTO_INCREMENT)
 #   """)
 
-mycursor.execute("DESCRIBE neo")
-result = mycursor.fetchall()
-for row in result: 
-    print(row)
+# mycursor.execute("DESCRIBE neo")
+
+# for x in mycursor.fetchall(): 
+#     print(x)
+
+## populating the table 
+# I know there is an alternative using sqlalchemy 
+
+# for row in range(clean.shape[0]): 
+#     n, c, cI, mC, mV, oT, t, subt, supert, OT, kw, p, t, r, sC, img_ref = tuple([x for x in clean.loc[row, :]])
+
+#     print(n)
+
+#     mycursor.execute("""INSERT INTO neo VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (n, c, cI, mC, int(mV), oT, t, subt, supert, OT, kw, p, t, r, sC, img_ref))
+
+# db.commit()
+
+# mycursor.execute("SELECT * FROM neo")
+
+# for x in mycursor: 
+#     print(x)
+
+## some of the names are too long for the VARCHAR(50) constraint 
+# alter_query = "ALTER TABLE neo MODIFY COLUMN name VARCHAR(54)"
+# mycursor.execute(alter_query)
+
+# ### using .executemany()
+
+# stmt = "INSERT INTO neo (name, colors, colorIdentity, manaCost, manaValue, originalType, types, subtypes, supertypes, originalText, keywords, power, toughness, rarity, setCode, image_ref) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+
+# mycursor.executemany(stmt, df_as_tuples)
+
+# db.commit()
+
+mycursor.execute("SELECT * FROM neo")
+
+for x in mycursor: 
+     # print([str(y).encode("utf-8") for y in x]) # :(
+    print(x)
+
+
+#codec cant  can't encode character '\u2212' = - (minus sign)
