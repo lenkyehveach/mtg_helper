@@ -1,0 +1,11 @@
+sql 
+
+eg - get x who started in 1980 
+
+SELECT 
+- first name 
+FROM
+- x 
+WHERE
+ -  year(hire_date) = 1980 
+ 
